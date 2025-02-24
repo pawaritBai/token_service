@@ -1,0 +1,93 @@
+package service;
+
+import java.io.IOException;
+import java.util.List;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+import dao.CustomerDAO;
+import model.Customer;
+@Path("/v1")
+public class serviceCus {
+	CustomerDAO cusDao = new CustomerDAO();
+	
+	@GET
+	@Path("/customers")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<Customer> getUsers() {
+		return cusDao.getAllCustomers();
+	}
+
+	@GET
+	@Path("/customers/{name}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Customer getCustomerByname(@PathParam("name") String name) {
+		return cusDao.findCustomerByName(name);
+	}
+
+	@POST
+	@Path("/customer")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response createCustomer(Customer cus) throws IOException {
+		boolean exists = cusDao.addCustomer(cus);
+		if (exists)
+			return Response.status(201).entity("createsuccessfully").build();
+		else
+			return Response.status(401).entity(" create fail").build();
+	}
+	
+	@PUT
+	@Path("/customer")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response editCustomer(Customer cus) {
+		boolean exists = cusDao.updateCustomer(cus);
+		if (exists)
+			return Response.status(200).entity(" UpdateSuccessfully").build();
+		else
+			return Response.status(400).entity(" Update fail").build();
+	}
+	
+	@DELETE
+	@Path("/customer/{id}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	public Response deleteLecterer(@PathParam("id") int id) {
+		boolean response = cusDao.deleteCustomer(id);
+		if (response)
+			return Response.status(200).entity(" DeleteSuccessfully").build();
+		else
+			return Response.status(400).entity(" Delete fail").build();
+	}
+	
+	private String generateToken(Customer c) {
+		try {
+		Algorithm algorithm = Algorithm.HMAC256(JWT_TOKEN_KEY);
+		Date expirationDate = Date.from(ZonedDateTime.now().plusHours(24).toInstant());
+		Date issuedAt = Date.from(ZonedDateTime.now().toInstant());
+		return JWT.create()
+		// Issue date.
+		.withIssuedAt(issuedAt)
+		// Expiration date.
+		.withExpiresAt(expirationDate)
+		// User id - here we can putanything we want, but for theexample userId is
+		// appropriate.
+		.withClaim("username",c.getUsername())
+		// Issuer of the token.
+		.withIssuer("jwtauth")
+		// And the signing algorithm.
+		.sign(algorithm);
+		} catch (JWTCreationException e) {
+		LOGGER.error(e.getMessage(), e);
+		}
+		return null;
+		}
+
+}
